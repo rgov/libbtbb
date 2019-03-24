@@ -54,7 +54,15 @@ PCAPNG_RESULT pcapng_create( PCAPNG_HANDLE * handle,
 		handle->interface_description_size =
 		handle->next_interface_option_offset = 0;
 
-	handle->fd = open( filename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP );
+	/* create a file, or use an existing named pipe or character device */
+	struct stat st;
+	result = stat( filename, &st );
+	if (result == 0 && (S_ISFIFO(st.st_mode) || S_ISCHR(st.st_mode))) {
+		handle->fd = open( filename, O_RDWR );
+	} else {
+		handle->fd = open( filename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP );
+	}
+
 	if (handle->fd == -1) {
 		switch( errno ) {
 		case EEXIST:
